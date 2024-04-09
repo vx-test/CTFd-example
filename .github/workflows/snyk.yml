@@ -5,30 +5,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.8
-      - name: Set up Snyk CLI to check for security issues
-        # Snyk can be used to break the build when it detects security issues.
-        # In this case we want to upload the SAST issues to GitHub Code Scanning
-        uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
-
-        # For Snyk Open Source you must first set up the development environment for your application's dependencies
-        # For example for Node
-        #- uses: actions/setup-node@v3
-        #  with:
-        #    node-version: 16
-
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/python-3.10@master
+        continue-on-error: true # To make sure that SARIF upload gets called
         env:
-          # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-        # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
-        # Use || true to not fail the pipeline
-      - name: Snyk Code test
-        run: snyk code test --sarif > snyk.sarif # || true
-        env:
-          SNYK_TOKEN: ${{secrets.SNYK_TOKEN}}
+        with:
+          args: --sarif-file-output=snyk.sarif
+          command: "code test"
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v2
         with:
